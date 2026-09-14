@@ -458,8 +458,6 @@ const CreateGroupScreen = ({navigation}) => {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
 
-  console.log('Get Users Data:', allUsersList);
-
   const getInitials = name => {
     const parts = name
       .trim()
@@ -518,6 +516,19 @@ const CreateGroupScreen = ({navigation}) => {
       setLoading(true);
 
       const result = await Contacts.getAll();
+      const appUsers = Array.isArray(allUsersList) ? allUsersList : [];
+
+      const registeredUsersMap = new Map(
+        appUsers
+          .map(user => {
+            const normalizedPhone = normalizePhone(
+              user?.mobileno || user?.mobile || user?.phone,
+            );
+
+            return normalizedPhone ? [normalizedPhone, user] : null;
+          })
+          .filter(Boolean),
+      );
 
       const formattedContacts = (
         Array.isArray(result) ? result : []
@@ -536,28 +547,44 @@ const CreateGroupScreen = ({navigation}) => {
           const normalizedPhone =
             normalizePhone(phoneNumber);
 
+          const matchedUser = normalizedPhone
+            ? registeredUsersMap.get(normalizedPhone)
+            : null;
+
+          const appPhoneNumber =
+            matchedUser?.mobileno ||
+            matchedUser?.mobile ||
+            matchedUser?.phone ||
+            phoneNumber;
+
+          const contactDisplayName =
+            fullName ||
+            matchedUser?.name ||
+            'Unknown User';
+
           return {
-            id:
+            id: matchedUser
+              ? matchedUser.id
+              : contact.recordID ||
+                `${fullName}-${phoneNumber}`,
+
+            contactId:
               contact.recordID ||
               `${fullName}-${phoneNumber}`,
 
-            name:
-              fullName || 'Unknown User',
+            name: contactDisplayName,
 
-            phoneNumber,
-
-            normalizedPhone,
-
+            phoneNumber: appPhoneNumber,
+            normalizedPhone:
+              normalizePhone(appPhoneNumber),
             image:
               contact.thumbnailPath || null,
 
-            initials: getInitials(
-              fullName || 'Unknown User',
-            ),
+            initials: getInitials(contactDisplayName),
 
-            // IMPORTANT:
-            // This should come from your Laravel API.
-            isRegistered: false,
+            isRegistered: !!matchedUser,
+            appUser: matchedUser || null,
+            email: matchedUser?.email || '',
           };
         })
         .filter(item => item.phoneNumber);
@@ -570,37 +597,7 @@ const CreateGroupScreen = ({navigation}) => {
           ),
       );
 
-      // ---------------------------------------------------
-      // TEMPORARY REGISTERED USER LOGIC
-      // ---------------------------------------------------
-      //
-      // Replace this with Laravel API response.
-      //
-      // Example:
-      // registeredPhoneNumbers = [
-      //   '+919876543210',
-      //   '+919876543211',
-      // ];
-      //
-      // ---------------------------------------------------
-
-      const registeredPhoneNumbers = [
-        // Add registered phone numbers here temporarily
-        // '+919876543210',
-        // '+919876543211',
-      ];
-
-      const updatedContacts =
-        formattedContacts.map(contact => ({
-          ...contact,
-
-          isRegistered:
-            registeredPhoneNumbers.includes(
-              contact.normalizedPhone,
-            ),
-        }));
-
-      setContacts(updatedContacts);
+      setContacts(formattedContacts);
     } catch (error) {
       console.log(
         'Load contacts error:',
@@ -615,7 +612,7 @@ const CreateGroupScreen = ({navigation}) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [allUsersList]);
 
   // ---------------------------------------------------------
   // Contact permission
@@ -1093,7 +1090,7 @@ const CreateGroupScreen = ({navigation}) => {
 
       return;
     }
-
+    console.log('Get Contact Data:', selectedUsers);
     navigation.navigate(
       'CreateGroupInfoScreen',
       {
@@ -1220,7 +1217,7 @@ const CreateGroupScreen = ({navigation}) => {
         </View>
         <View>
           <FlatList
-            data={filteredInviteContacts}
+            data={filteredRegisteredContacts}
             keyExtractor={item => `registered-${item.id}`}
             renderItem={renderRegisteredUser}
             scrollEnabled={false}

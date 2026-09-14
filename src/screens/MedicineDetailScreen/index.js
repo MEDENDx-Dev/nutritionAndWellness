@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { useTranslation } from 'react-i18next';
 import {
     View,
@@ -27,6 +27,8 @@ import moment from 'moment';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import SelectDropdown from 'react-native-select-dropdown';
 import down from '../../images/down.png';
+import { useFocusEffect } from "@react-navigation/native";
+import { onAddCommonFormApi, onGetCommonApi } from "../../services/Api";
 
 const genderArray = [
     { id: 1, value: '1 Day' },
@@ -59,8 +61,8 @@ const doseScheduleArray = [
     { id: 4, value: 'Night' },
 ];
 
-const MedicineDetailScreen = ({ navigation }) => {
-    const { updateSignupData } = useAuthStore();
+const MedicineDetailScreen = ({navigation, route}) => {
+    const { updateSignupData, profileData, signupData, updateProfileData} = useAuthStore();
     const orientation = useOrientation();
     const isPortrait = orientation === 'portrait';
     const styles = isPortrait ? portraitStyles : landscapeStyles;
@@ -72,17 +74,28 @@ const MedicineDetailScreen = ({ navigation }) => {
     const [medicineList, setMedicineList] = useState([]);
     const [dob, setDob] = useState(null);
     const [dateModalVisible, setDateModalVisible] = useState(false);
+    const [fromAccount, setFromAccount] = useState(false);
     const [dobError, setDobError] = useState(false);
-    const [unitInput, setUnitInput] = useState('');
-    const [unit, setUnit] = useState('');
-    const [totalDose, setTotalDose] = useState('');
+    const [unit, setUnit] = useState('mg');
+    const [totalDose, setTotalDose] = useState('1');
     const [duration, setDuration] = useState('');
     const [doseSchedule, setDoseSchedule] = useState([{
         dose: 1,
-        schedule: '',
+        schedule: 'Breakfast',
     }]);
     const { t } = useTranslation();
 
+    console.log('profileData', profileData);
+    useFocusEffect(
+        useCallback(() => {
+            if (route.params?.item) {
+                setMedicineList(profileData?.medicines);
+                setFromAccount(true);
+            } else {
+                setMedicineList(signupData?.current_medicine);
+            }
+        }, [route.params?.item, profileData?.medicines, signupData?.current_medicine])
+    );
     const addMedicine = () => {
         if (!medicineName.trim()) {
             Alert.alert("Required", "Please enter medicine name");
@@ -109,9 +122,12 @@ const MedicineDetailScreen = ({ navigation }) => {
         const newMedicine = {
             id: Date.now(),
             medicine_name: medicineName,
-            dosage,
-            total_daily_dose: totalDose,
-            dose_schedule: doseSchedule,
+            duration: duration,
+            startDate: dob,
+            dose: dosage,
+            dosageUnit: unit,
+            totalDose: totalDose,
+            timing: doseSchedule,
             additional_notes: notes,
         };
 
@@ -119,9 +135,15 @@ const MedicineDetailScreen = ({ navigation }) => {
 
         // Reset form
         setMedicineName("");
+        setDob(null);
         setDosage("");
-        setTotalDose("");
-        setDoseSchedule([]);
+        setDuration('');
+        setUnit('');
+        setTotalDose("1");
+        setDoseSchedule([{
+            dose: 1,
+            schedule: 'Breakfast',
+        }]);
         setNotes("");
     };
 
@@ -132,26 +154,131 @@ const MedicineDetailScreen = ({ navigation }) => {
         setMedicineList(updated);
     };
 
-    const handleContinue = () => {
-        if (medicineList.length == 0) {
-            updateSignupData({
-                current_medicine: [{
-                    medicine_name: '',
-                    dosage: '',
-                    timing: '',
-                    additional_notes: '',
-                }]
-            });
-            navigation.navigate('WorkoutReference');
-        } else {
-            updateSignupData({
-                current_medicine: medicineList.map(
-                    ({ id, ...rest }) => rest
-                ),
-            });
-            console.log("Medicine List:", medicineList);
-            navigation.navigate('WorkoutReference');
-        }
+    const handleContinue = async () => {
+        if (fromAccount) {
+                        try {
+                            const imageUrl = profileData.prescription_file;
+                            const extension = imageUrl ? imageUrl.split(".").pop().toLowerCase() : null;
+                            let mimeType = "image/png";
+                            switch (extension) {
+                                case "jpg":
+                                case "jpeg":
+                                    mimeType = "image/jpeg";
+                                    break;
+                                case "png":
+                                    mimeType = "image/png";
+                                    break;
+                                case "webp":
+                                    mimeType = "image/webp";
+                                    break;
+                                case "pdf":
+                                    mimeType = "application/pdf";
+                                    break;
+                            }
+                            const imageFile = {
+                                uri: imageUrl,
+                                type: mimeType,
+                                name: imageUrl ? imageUrl.split('/').pop() : null,
+                            };
+                            const goalIds = profileData?.goals.map(item => item.id);
+                            const medicalIds = profileData?.medical_conditions.map(item => item.id);
+                            console.log('Profile Data for API:', goalIds, profileData);
+                            var formdata = new FormData();
+                            formdata.append("name", profileData?.name);
+                            formdata.append("dob", moment(profileData?.dob).format('DD/MM/YYYY'));
+                            formdata.append("gender", profileData?.gender);
+                            formdata.append("height", profileData?.height);
+                            formdata.append("weight", profileData?.weight);
+                            formdata.append("diet", profileData?.diet?.id || '');
+                            formdata.append("activity_level", profileData?.activity_level?.id || '');
+                            formdata.append("medical_condition_text", profileData?.medical_condition_text || '');
+                            if (profileData.prescription_file) {
+                                formdata.append("prescription_file", imageFile);
+                            }
+                            formdata.append("health_note", profileData?.health_note || '');
+                            goalIds.forEach(id => {
+                                formdata.append("goal[]", id);
+                            });
+                            medicalIds.forEach(id => {
+                                formdata.append("medical_condition[]", id);
+                            });
+                            medicineList?.forEach((medicine, index) => {
+                                formdata.append(`current_medicine[${index}][medicine_name]`, medicine.medicine_name);
+                                formdata.append(`current_medicine[${index}][duration]`, medicine.duration);
+                                formdata.append(`current_medicine[${index}][startDate]`, moment(medicine.startDate).format('DD/MM/YYYY'));
+                                formdata.append(`current_medicine[${index}][dosageUnit]`, medicine.dosageUnit);
+                                formdata.append(`current_medicine[${index}][dose]`, medicine.dose);
+                                formdata.append(`current_medicine[${index}][totalDose]`, medicine.totalDose);
+                                const timingArray = medicine.timing || [];
+                                timingArray.forEach((timingItem, timingIndex) => {
+                                    formdata.append(
+                                        `current_medicine[${index}][timing][${timingIndex}]`,
+                                        timingItem.schedule || ''
+                                    );
+                                });
+                                formdata.append(`current_medicine[${index}][additional_notes]`, medicine.additional_notes);
+                            });
+                            formdata.append("workout_reference", profileData?.workout_reference?.id);
+                            console.log('Request Data:', formdata);
+                            const response = await onAddCommonFormApi('user/profile', formdata);
+                            if (response.data.status) {
+                                showMessage({
+                                    message: 'Profile updated successfully',
+                                    type: 'success',
+                                    duration: 4000, 
+                                    icon: 'success',
+                                });
+                                const profileRes = await onGetCommonApi('user/profile');
+                                updateProfileData(profileRes.data.data.user);
+                                navigation.goBack();
+                            } else {
+                                showMessage({
+                                    message: response.data.message,
+                                    type: 'danger',
+                                    duration: 4000,
+                                    icon: 'danger',
+                                });
+                                setIsLoading(false);
+                            }
+                        } catch (error) {
+                            console.log('Error saving profile data:', error.response || error);
+                            showMessage({
+                                message: 'Error updating profile',
+                                type: 'danger',
+                                duration: 4000,
+                                icon: 'danger',
+                            });
+                            setIsLoading(false);
+                            
+                        }
+                    } else {
+                        if (medicineList.length == 0) {
+                            updateSignupData({
+                                current_medicine: [{
+                                    medicine_name: '',
+                                    duration: '',
+                                    startDate: null,
+                                    dose: '',
+                                    dosageUnit: '',
+                                    totalDose: '1',
+                                    timing: [{
+                                        dose: 1,
+                                        schedule: 'Breakfast',
+                                    }],
+                                    additional_notes: '',
+                                }]
+                            });
+                            navigation.navigate('WorkoutReference');
+                        } else {
+                            updateSignupData({
+                                current_medicine: medicineList.map(
+                                    ({ id, ...rest }) => rest
+                                ),
+                            });
+                            console.log("Medicine List:", medicineList);
+                            navigation.navigate('WorkoutReference');
+                        }
+                    }
         // Alert.alert(
         // "Success",
         // "Medicine details saved successfully"
@@ -167,7 +294,7 @@ const MedicineDetailScreen = ({ navigation }) => {
         setDoseSchedule(
             Array.from({ length: doseCount }, (_, index) => ({
                 dose: index + 1,
-                schedule: '',
+                schedule: 'Breakfast',
             }))
         );
     };
@@ -448,7 +575,6 @@ const MedicineDetailScreen = ({ navigation }) => {
                                             renderButton={(selectedItem, isOpen) => {
                                                 const selectedSchedule =
                                                     doseSchedule[index]?.schedule || '';
-
                                                 return (
                                                     <View
                                                         style={[
@@ -461,7 +587,6 @@ const MedicineDetailScreen = ({ navigation }) => {
                                                                 selectedItem?.value ||
                                                                 'Select Schedule'}
                                                         </Text>
-
                                                         <View style={{ width: wp(7) }}>
                                                             <Image
                                                                 style={styles.filterImage}
@@ -474,9 +599,7 @@ const MedicineDetailScreen = ({ navigation }) => {
                                             showsVerticalScrollIndicator={false}
                                             renderItem={(item) => {
                                                 return (
-                                                    <TouchableOpacity
-                                                        style={styles.dropdownView}
-                                                    >
+                                                    <TouchableOpacity style={styles.dropdownView}>
                                                         <Text style={styles.dropdownItemTxtStyle}>
                                                             {item?.value}
                                                         </Text>
@@ -524,18 +647,18 @@ const MedicineDetailScreen = ({ navigation }) => {
                                         <Text style={styles.medicineName}>
                                             💊 {item.medicine_name}
                                         </Text>
-                                        {!!item.dosage && (
+                                        {!!item.dosageUnit && (
                                             <Text style={styles.detailText}>
-                                                Dosage: {item.dosage}
+                                                Dosage: {item.dosageUnit}
                                             </Text>
                                         )}
-                                        {!!item.dose_schedule?.length && (
+                                        {!!item.timing?.length && (
                                             <View style={{ marginTop: hp(0.5) }}>
                                                 <Text style={styles.detailText}>
                                                     Dose Schedule:
                                                 </Text>
 
-                                                {item.dose_schedule.map((doseItem, index) => (
+                                                {item.timing.map((doseItem, index) => (
                                                     <Text
                                                         key={`medicine-dose-${item.id}-${index}`}
                                                         style={[
@@ -569,7 +692,7 @@ const MedicineDetailScreen = ({ navigation }) => {
                             style={styles.button}
                             onPress={handleContinue}>
                             <Text style={styles.buttonText}>
-                                {t('next')}
+                                {fromAccount ? t('save') : t('next')}
                             </Text>
                         </TouchableOpacity>
                     </View>

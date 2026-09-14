@@ -110,7 +110,6 @@ export const portraitStyles = StyleSheet.create({
     fontFamily: Fonts.FONTS.PoppinsSemiBold,
   },
   footer: {
-    padding: 20,
     backgroundColor: COLORS.backColor,
   },
   button: {

@@ -387,7 +387,7 @@
 
 
 
-import React, {useState} from 'react';
+import React, {useCallback, useState} from 'react';
 import {
   View,
   Text,
@@ -398,6 +398,8 @@ import {
   TextInput,
   Image,
   StatusBar,
+  ActivityIndicator,
+  Modal,
 } from 'react-native';
 import Icon from '../../components/Icon';
 import { portraitStyles, landscapeStyles } from './styles';
@@ -405,8 +407,11 @@ import useOrientation from '../../components/OrientationComponent';
 import { COLORS } from '../../utils';
 import Header from '../../components/HeaderComponent';
 import { useTranslation } from 'react-i18next';
-import down from '../../images/down.png';
+import searchIcon from '../../images/search.png';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
+import { onGetCommonApi } from '../../services/Api';
+import moment from 'moment';
 
 const categories = [
   'All',
@@ -502,24 +507,92 @@ const CommunityForum = ({navigation}) => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [search, setSearch] = useState('');
   const [postList, setPostList] = useState(posts);
+  const [myGroupList, setMyGroupList] = useState([]);
+  const [searchGroupList, setSearchGroupList] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSearchLoading, setIsSearchLoading] = useState(false);
+  const [isSearchModalVisible, setIsSearchModalVisible] = useState(false);
 
-  const filteredPosts = postList.filter(item => {
-    const categoryMatch =
-      selectedCategory === 'All' ||
-      item.category === selectedCategory;
+  useFocusEffect(
+    useCallback(() => {
+      onGetGroupListData();
+    }, [])
+  );
 
-    const searchMatch =
-      item.title.toLowerCase().includes(search.toLowerCase()) ||
-      item.description.toLowerCase().includes(search.toLowerCase());
+  const onGetGroupListData = async () => {
+    try {
+      setIsLoading(true)
+      const responseData = await onGetCommonApi('chat-groups/my');
+      if (responseData.data.status) {
+        setMyGroupList(responseData.data.data.groups);
+        setIsLoading(false);
+      }
+    } catch (err) {
+      setIsLoading(false);
+      console.log('ERROR:',err);
+    }
+  };
+  
+  const onGetPublicGroupListData = async (query = search) => {
+    const trimmedQuery = (query || '').trim();
 
-    return categoryMatch && searchMatch;
-  });
+    if (!trimmedQuery) {
+      setSearchGroupList([]);
+      return;
+    }
+
+    try {
+      setIsSearchLoading(true);
+      const responseData = await onGetCommonApi(
+        `chat-groups/public?search=${encodeURIComponent(trimmedQuery)}`,
+      );
+
+      if (responseData.data.status) {
+        setSearchGroupList(responseData.data.data.groups || []);
+      }
+    } catch (err) {
+      console.log('ERROR:', err);
+    } finally {
+      setIsSearchLoading(false);
+    }
+  };
+
+  const handleOpenSearchModal = () => {
+    setSearchGroupList([]);
+    setIsSearchModalVisible(true);
+  };
+
+  const handleSelectPublicGroup = group => {
+    setIsSearchModalVisible(false);
+
+    navigation.navigate('MessageScreen', {
+      ...group,
+      groupName: group.name,
+      groupImage: group.groupImage || group.logo,
+      memberCount:
+        group.memberCount ||
+        group.members_count ||
+        group.member_count ||
+        0,
+    });
+  };
 
   const renderPost = ({item}) => {
     return (
       <TouchableOpacity
         style={styles.postCard}
-        onPress={() => navigation.navigate('MessageScreen')}>
+        onPress={() =>
+          navigation.navigate('MessageScreen', {
+            ...item,
+            groupName: item.name,
+            groupImage: item.groupImage || item.logo,
+            memberCount:
+              item.memberCount ||
+              item.members_count ||
+              item.member_count ||
+              0,
+          })
+        }>
         <View style={styles.userRow}>
           {/* <Image
             source={{uri: item.avatar}}
@@ -527,23 +600,58 @@ const CommunityForum = ({navigation}) => {
           /> */}
           {item?.groupImage ? (
             <Image
-              source={{uri: item?.groupImage}}
+              source={{uri: item?.logo}}
               style={styles.groupImage}
             />
           ) : (
             <View style={styles.groupImagePlaceholder}>
               <Text style={styles.groupImageText}>
-                {item.user
+                {item.name
                   ?.charAt(0)
                   ?.toUpperCase()}
               </Text>
             </View>
           )}
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>{item.user}</Text>
+            <Text style={styles.userName}>{item.name}</Text>
             <Text style={styles.postTime}>user1 - i have one question.</Text>
           </View>
-          <Text style={styles.postTime}>{item.time}</Text>
+          <Text style={styles.postTime}>{moment(item.updated_at).format('DD-MM-YYYY')}</Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderSearchGroupItem = ({item}) => {
+    return (
+      <TouchableOpacity
+        style={styles.postCard}
+        onPress={() => handleSelectPublicGroup(item)}
+        activeOpacity={0.8}>
+        <View style={styles.userRow}>
+          {item?.groupImage || item?.logo ? (
+            <Image
+              source={{uri: item?.groupImage || item?.logo}}
+              style={styles.groupImage}
+            />
+          ) : (
+            <View style={styles.groupImagePlaceholder}>
+              <Text style={styles.groupImageText}>
+                {item?.name?.charAt(0)?.toUpperCase()}
+              </Text>
+            </View>
+          )}
+
+          <View style={styles.userInfo}>
+            <Text style={styles.userName}>{item.name}</Text>
+            <Text style={styles.postTime}>
+              {item.members_count || item.member_count || 0} members
+            </Text>
+          </View>
+
+          <Text style={styles.postTime}>
+            {moment(item.updated_at).format('DD-MM-YYYY')}
+          </Text>
         </View>
       </TouchableOpacity>
     );
@@ -562,52 +670,62 @@ const CommunityForum = ({navigation}) => {
         <Header title={t('community_forum')} onPress={() => navigation.goBack()} />
       </View>
       {/* Search */}
-        <View style={styles.searchContainer}>
+      <View style={styles.searchContainer}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={handleOpenSearchModal}>
           <Icon
             name="search"
             size={22}
             color="#777777"
           />
+        </TouchableOpacity>
 
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search contacts"
-            placeholderTextColor="#999999"
-            style={styles.searchInput}
-          />
+        <TextInput
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Search public groups"
+          placeholderTextColor="#999999"
+          style={styles.searchInput}
+          onFocus={handleOpenSearchModal}
+        />
 
-          {search.length > 0 && (
-            <TouchableOpacity
-              onPress={() => setSearch('')}>
-              <Icon
-                name="close"
-                size={20}
-                color="#777777"
-              />
-            </TouchableOpacity>
-          )}
-        </View>
+        {search.length > 0 && (
+          <TouchableOpacity onPress={() => setSearch('')}>
+            <Icon
+              name="close"
+              size={20}
+              color="#777777"
+            />
+          </TouchableOpacity>
+        )}
+      </View>
       <FlatList
-        data={filteredPosts}
+        data={myGroupList}
         keyExtractor={item => item.id}
         renderItem={renderPost}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Icon
-              name="chatbubbles-outline"
-              size={55}
-              color={COLORS.white}
-            />
-            <Text style={styles.emptyTitle}>
-              {t('no_discussion_found')}
-            </Text>
-            <Text style={styles.emptyText}>
-              {t('try_another_search')}
-            </Text>
-          </View>
+          isLoading ? (
+            <View style={styles.emptyContainer}>
+              <ActivityIndicator color={COLORS.white} size={'large'} />
+            </View>
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Icon
+                name="chatbubbles-outline"
+                size={55}
+                color={COLORS.white}
+              />
+              <Text style={styles.emptyTitle}>
+                {t('no_discussion_found')}
+              </Text>
+              <Text style={styles.emptyText}>
+                {t('try_another_search')}
+              </Text>
+            </View>
+          )
         }
       />
       <TouchableOpacity
@@ -625,6 +743,111 @@ const CommunityForum = ({navigation}) => {
           {t('create_post')}
         </Text>
       </TouchableOpacity>
+
+      <Modal
+        transparent
+        visible={isSearchModalVisible}
+        animationType="slide"
+        onRequestClose={() => setIsSearchModalVisible(false)}>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.45)',
+            justifyContent: 'flex-end',
+          }}>
+          <View
+            style={{
+              backgroundColor: COLORS.primary,
+              height: '100%',
+              padding: 16,
+            }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 12,
+              }}>
+              <Text
+                style={{
+                  color: COLORS.white,
+                  fontSize: 18,
+                  fontWeight: '700',
+                }}>
+                Search Groups
+              </Text>
+
+              <TouchableOpacity
+                onPress={() => {setSearch(''), setIsSearchModalVisible(false)}}>
+                <Text
+                  style={{
+                    color: COLORS.white,
+                    fontSize: 14,
+                    fontWeight: '600',
+                  }}>
+                  Close
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: '#ffffff',
+                borderRadius: 10,
+                paddingHorizontal: 10,
+                marginBottom: 12,
+              }}>
+              <TextInput
+                value={search}
+                onChangeText={text => {
+                  setSearch(text);
+                  onGetPublicGroupListData(text);
+                }}
+                placeholder="Search public groups"
+                placeholderTextColor="#999999"
+                autoFocus={true}
+                style={{
+                  flex: 1,
+                  paddingVertical: 10,
+                  color: '#222222',
+                  fontSize: 14,
+                }}
+              />
+            </View>
+
+            {isSearchLoading ? (
+              <View
+                style={{
+                  paddingVertical: 30,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                <ActivityIndicator color={COLORS.white} size="large" />
+              </View>
+            ) : (
+              <FlatList
+                data={searchGroupList}
+                keyExtractor={item => `public-group-${item.id}`}
+                renderItem={renderSearchGroupItem}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{paddingBottom: 16}}
+                ListEmptyComponent={
+                  <View style={styles.emptyContainer}>
+                    <Image style={styles.searchImage} source={searchIcon} />
+                    <Text style={styles.emptyTitle}>
+                      Search Group not found.
+                    </Text>
+                    <Text style={styles.emptyText}>
+                      Try another search keyword.
+                    </Text>
+                  </View>
+                }
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };

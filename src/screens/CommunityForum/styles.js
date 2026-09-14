@@ -55,6 +55,11 @@ export const portraitStyles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: '#E53935',
   },
+  searchImage: {
+    width: wp(12),
+    height: hp(8),
+    resizeMode: 'contain',
+  },
   searchContainer: {
     height: 48,
     backgroundColor: COLORS.primary,
@@ -268,13 +273,14 @@ export const portraitStyles = StyleSheet.create({
   },
   emptyTitle: {
     marginTop: 15,
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#444',
+    fontSize: normalize(18),
+    fontFamily: Fonts.FONTS.PoppinsSemiBold,
+    color: COLORS.white,
   },
   emptyText: {
     marginTop: 5,
-    fontSize: 13,
+    fontSize: normalize(15),
+    fontFamily: Fonts.FONTS.PoppinsMedium,
     color: '#999',
   },
   groupImage: {

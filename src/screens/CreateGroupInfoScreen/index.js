@@ -18,6 +18,7 @@ import {portraitStyles, landscapeStyles} from './styles';
 import {COLORS} from '../../utils';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {hp, normalize, wp} from '../../components/responsive';
+import { onAddCommonFormApi } from '../../services/Api';
 
 const CreateGroupInfoScreen = ({navigation, route}) => {
   const orientation = useOrientation();
@@ -56,9 +57,13 @@ const CreateGroupInfoScreen = ({navigation, route}) => {
       compressImageQuality: 0.8,
       mediaType: 'photo',
     });
-
+    console.log('Get Images Data:', image);
     if (image?.path) {
-      setGroupImage(image.path);
+      setGroupImage({
+        uri: image.path,
+        type: image.mime,
+        name: image.filename,
+      });
     }
   } catch (error) {
     if (error?.code === 'E_PICKER_CANCELLED') {
@@ -90,48 +95,20 @@ const CreateGroupInfoScreen = ({navigation, route}) => {
 
     try {
       setCreating(true);
-
-      /*
-       * API example:
-       *
-       * const payload = {
-       *   name: trimmedName,
-       *   image: groupImage,
-       *   members: selectedUsers.map(user => ({
-       *     contact_id: user.id,
-       *     name: user.name,
-       *     phone_number: user.phoneNumber,
-       *   })),
-       * };
-       *
-       * const response = await onAddCommonJsonApi(
-       *   'community/groups',
-       *   payload
-       * );
-       */
-
-      const createdGroup = {
-        groupId: Date.now().toString(),
-        groupName: trimmedName,
-        groupImage,
-        memberCount: selectedUsers.length + 1,
-        members: selectedUsers,
-      };
-
-      setCreating(false);
-
-      // navigation.reset({
-      //   index: 1,
-      //   routes: [
-      //     {
-      //       name: 'CommunityGroupListScreen',
-      //     },
-      //     {
-      //       name: 'MessageScreen',
-      //       params: createdGroup,
-      //     },
-      //   ],
-      // });
+      const selectedUser = selectedUsers.map(item => item.id);
+      var formdata = new FormData();
+      formdata.append("group_name", groupName);
+      formdata.append("group_type", radioButtonVisible ? 'public' : 'private');
+      formdata.append("group_logo", groupImage);
+      selectedUser.forEach(id => {
+          formdata.append("users[]", id);
+      });
+      const response = await onAddCommonFormApi('chat-groups', formdata);
+      console.log('Response Data:', response.data);
+      if (response.data.status) {
+        setCreating(false);
+        navigation.navigate('CommunityForum');
+      }
     } catch (error) {
       setCreating(false);
 
@@ -204,7 +181,7 @@ const CreateGroupInfoScreen = ({navigation, route}) => {
                 onPress={selectGroupImage}>
                 {groupImage ? (
                   <Image
-                    source={{uri: groupImage}}
+                    source={{uri: groupImage?.uri}}
                     style={styles.groupImage}
                   />
                 ) : (
