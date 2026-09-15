@@ -563,17 +563,15 @@ const CommunityForum = ({navigation}) => {
   };
 
   const handleSelectPublicGroup = group => {
+    setSearch('');
     setIsSearchModalVisible(false);
 
     navigation.navigate('MessageScreen', {
       ...group,
       groupName: group.name,
-      groupImage: group.groupImage || group.logo,
-      memberCount:
-        group.memberCount ||
-        group.members_count ||
-        group.member_count ||
-        0,
+      groupImage: group.logo,
+      memberCount: group.members_count || 0,
+      isJoined: group.is_joined || false,
     });
   };
 
@@ -581,16 +579,13 @@ const CommunityForum = ({navigation}) => {
     return (
       <TouchableOpacity
         style={styles.postCard}
-        onPress={() =>
+        onPress={() => 
           navigation.navigate('MessageScreen', {
             ...item,
             groupName: item.name,
-            groupImage: item.groupImage || item.logo,
-            memberCount:
-              item.memberCount ||
-              item.members_count ||
-              item.member_count ||
-              0,
+            groupImage: item.logo,
+            memberCount: item.members_count || 0,
+            isJoined: true,
           })
         }>
         <View style={styles.userRow}>
@@ -598,7 +593,7 @@ const CommunityForum = ({navigation}) => {
             source={{uri: item.avatar}}
             style={styles.avatar}
           /> */}
-          {item?.groupImage ? (
+          {item?.logo ? (
             <Image
               source={{uri: item?.logo}}
               style={styles.groupImage}

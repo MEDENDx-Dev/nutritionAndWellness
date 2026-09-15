@@ -105,6 +105,7 @@ const CreateGroupInfoScreen = ({navigation, route}) => {
       });
       const response = await onAddCommonFormApi('chat-groups', formdata);
       console.log('Response Data:', response.data);
+      
       if (response.data.status) {
         setCreating(false);
         navigation.navigate('CommunityForum');

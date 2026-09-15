@@ -172,7 +172,7 @@ const MeditationTimer = ({
               disabled={!isEditable}
             >
               <Text style={styles.resetButtonText}>
-                Reset
+                Stop
               </Text>
             </TouchableOpacity>
 

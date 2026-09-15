@@ -264,6 +264,18 @@ export const portraitStyles = StyleSheet.create({
   sendButtonDisabled: {
     opacity: 0.45,
   },
+  joinView: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    paddingVertical: hp(1),
+    backgroundColor: COLORS.white,
+  },
+  joinText: {
+    fontSize: normalize(20),
+    fontFamily: Fonts.FONTS.PoppinsSemiBold,
+    color: COLORS.secondary
+  }
 });
 
 export const landscapeStyles = StyleSheet.create({

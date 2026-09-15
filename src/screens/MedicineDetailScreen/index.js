@@ -81,7 +81,7 @@ const MedicineDetailScreen = ({navigation, route}) => {
     const [duration, setDuration] = useState('');
     const [doseSchedule, setDoseSchedule] = useState([{
         dose: 1,
-        schedule: 'Breakfast',
+        schedule: 'Morning',
     }]);
     const { t } = useTranslation();
 
@@ -142,7 +142,7 @@ const MedicineDetailScreen = ({navigation, route}) => {
         setTotalDose("1");
         setDoseSchedule([{
             dose: 1,
-            schedule: 'Breakfast',
+            schedule: 'Morning',
         }]);
         setNotes("");
     };
@@ -263,7 +263,7 @@ const MedicineDetailScreen = ({navigation, route}) => {
                                     totalDose: '1',
                                     timing: [{
                                         dose: 1,
-                                        schedule: 'Breakfast',
+                                        schedule: 'Morning',
                                     }],
                                     additional_notes: '',
                                 }]
@@ -294,7 +294,7 @@ const MedicineDetailScreen = ({navigation, route}) => {
         setDoseSchedule(
             Array.from({ length: doseCount }, (_, index) => ({
                 dose: index + 1,
-                schedule: 'Breakfast',
+                schedule: 'Morning',
             }))
         );
     };
@@ -400,7 +400,7 @@ const MedicineDetailScreen = ({navigation, route}) => {
                             </Text>
                             <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'}}>
                             <TextInput
-                                placeholder={'500'}
+                                placeholder={'ex.500'}
                                 placeholderTextColor="#eee"
                                 value={dosage}
                                 onChangeText={setDosage}
@@ -659,6 +659,7 @@ const MedicineDetailScreen = ({navigation, route}) => {
                                                 </Text>
 
                                                 {item.timing.map((doseItem, index) => (
+                                                    doseItem?.schedule != null ?
                                                     <Text
                                                         key={`medicine-dose-${item.id}-${index}`}
                                                         style={[
@@ -667,6 +668,15 @@ const MedicineDetailScreen = ({navigation, route}) => {
                                                         ]}
                                                     >
                                                         {`Dose ${doseItem.dose}: ${doseItem.schedule}`}
+                                                    </Text> : 
+                                                    <Text
+                                                        key={`medicine-dose-${item.id}-${index}`}
+                                                        style={[
+                                                            styles.detailText,
+                                                            { marginLeft: wp(2) },
+                                                        ]}
+                                                    >
+                                                        {`Dose ${index+1}: ${doseItem}`}
                                                     </Text>
                                                 ))}
                                             </View>
