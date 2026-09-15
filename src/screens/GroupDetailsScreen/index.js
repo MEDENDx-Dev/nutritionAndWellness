@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -20,62 +20,41 @@ import {COLORS, Fonts} from '../../utils';
 import {normalize, wp} from '../../components/responsive';
 import {useTranslation} from 'react-i18next';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import useAuthStore from '../../store/authStore';
+import { showMessage } from 'react-native-flash-message';
+import {onAddCommonJsonApi, onDeleteCommonApi} from '../../services/Api';
 
 const GroupDetailsScreen = ({navigation, route}) => {
+  const {profileData} = useAuthStore();
+  const currentUserId = Number(profileData?.id);
   const orientation = useOrientation();
   const isPortrait = orientation === 'portrait';
   const styles = isPortrait ? portraitStyles : landscapeStyles;
   const insets = useSafeAreaInsets();
   const {t} = useTranslation();
-  const group = route?.params || {};
-  const groupName = group.groupName || 'Nutrition Support Group';
-  const memberCount = group.memberCount || 24;
-
-  const groupImage = group.groupImage || null;
-
-  const [isMuted, setIsMuted] = useState(false);
-
-  const [members] = useState([
-    {
-      id: '1',
-      name: 'You',
-      role: 'Member',
-      online: true,
-    },
-    {
-      id: '2',
-      name: 'Sarah Johnson',
-      role: 'Member',
-      online: true,
-    },
-    {
-      id: '3',
-      name: 'Michael Smith',
-      role: 'Member',
-      online: false,
-    },
-    {
-      id: '4',
-      name: 'Emily Wilson',
-      role: 'Member',
-      online: true,
-    },
-    {
-      id: '5',
-      name: 'David Brown',
-      role: 'Member',
-      online: false,
-    },
-  ]);
-
-  const [showAllMembers, setShowAllMembers] =
-    useState(false);
-
+  const groupDetails = route?.params?.groupDetails || {};
+  const groupName = groupDetails.name || 'Nutrition Support Group';
+  const groupImage = groupDetails.logo || null;
+  const routeMembers = Array.isArray(groupDetails.members)
+    ? groupDetails.members
+    : [];
+  const [members, setMembers] = useState(routeMembers);
+  const [showAllMembers, setShowAllMembers] = useState(false);
+  const memberCount = members.length;
   const displayedMembers = showAllMembers
     ? members
-    : members.slice(0, 4);
+    : members.slice(0, 3);
 
-  const handleLeaveGroup = () => {
+  useEffect(() => {
+    setMembers(
+      Array.isArray(groupDetails.members)
+        ? groupDetails.members
+        : [],
+    );
+    setShowAllMembers(false);
+  }, [groupDetails.members]);
+
+  const handleLeaveGroup = async () => {
     Alert.alert(
       'Leave Group',
       'Are you sure you want to leave this group?',
@@ -89,7 +68,85 @@ const GroupDetailsScreen = ({navigation, route}) => {
           style: 'destructive',
           onPress: () => {
             console.log('Leave group');
-            navigation.goBack();
+            onLeaveApiData();
+          },
+        },
+      ],
+    );
+  };
+
+  const onLeaveApiData = async () => {
+    try {
+      let raw = JSON.stringify({});
+      const response = await onAddCommonJsonApi(`chat-groups/${groupDetails.id}/leave`, raw);
+      if (response.data.status) {
+        navigation.navigate('CommunityForum');
+      }
+    } catch (err) {
+      console.log('Error:', err);
+      showMessage({
+        message: 'Server is down. please try after sometime.',
+        duration: 3000,
+        icon: 'danger',
+        type: 'danger',
+      });
+    }
+  };
+
+  const getMemberId = member =>
+    member?.user_id ?? member?.user?.id ?? member?.id;
+
+  const removeMember = member => {
+    const memberId = getMemberId(member);
+
+    if (memberId === null || memberId === undefined) {
+      showMessage({
+        message: 'Unable to identify this member.',
+        duration: 3000,
+        icon: 'danger',
+        type: 'danger',
+      });
+      return;
+    }
+
+    Alert.alert(
+      'Remove Member',
+      `Remove ${member?.name || 'this member'} from the group?`,
+      [
+        {text: 'Cancel', style: 'cancel'},
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const response = await onDeleteCommonApi(
+                `chat-groups/${groupDetails.id}/members/${memberId}`,
+              );
+
+              if (response.data.status) {
+                setMembers(currentMembers =>
+                  currentMembers.filter(
+                    currentMember =>
+                      String(getMemberId(currentMember)) !==
+                      String(memberId),
+                  ),
+                );
+                showMessage({
+                  message: 'Member removed successfully.',
+                  duration: 3000,
+                  icon: 'success',
+                  type: 'success',
+                });
+              }
+            } catch (error) {
+              console.log('Remove member error:', error);
+              showMessage({
+                message: 'Unable to remove member. Please try again.',
+                duration: 3000,
+                icon: 'danger',
+                type: 'danger',
+              });
+            }
           },
         },
       ],
@@ -101,6 +158,11 @@ const GroupDetailsScreen = ({navigation, route}) => {
       <TouchableOpacity
         style={styles.memberRow}
         activeOpacity={0.7}
+        onLongPress={() => {
+          if (currentUserId == groupDetails?.created_by) {
+            removeMember(item);
+          }
+        }}
         onPress={() => {
           console.log(
             'Selected member:',
@@ -128,17 +190,17 @@ const GroupDetailsScreen = ({navigation, route}) => {
           </Text>
 
           <Text style={styles.memberRole}>
-            {item.role}
+            {item.pivot.role}
           </Text>
         </View>
 
-        {/* {item.role === 'Admin' && (
+        {item.pivot.role === 'admin' && (
           <View style={styles.adminBadge}>
             <Text style={styles.adminBadgeText}>
               Admin
             </Text>
           </View>
-        )} */}
+        )}
       </TouchableOpacity>
     );
   };
@@ -171,19 +233,23 @@ const GroupDetailsScreen = ({navigation, route}) => {
         <Text style={styles.headerTitle}>
           Group Info
         </Text>
-
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={() => {
-            console.log('Edit group');
-          }}>
-          <Icon
-            name="edit"
-            size={21}
-            color="#FFFFFF"
-          />
-        </TouchableOpacity>
-
+        {currentUserId == groupDetails?.created_by ? (
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={() => {
+              navigation.navigate('EditGroupScreen', {
+                groupDetails: groupDetails,
+              });
+            }}>
+            <Icon
+              name="edit"
+              size={21}
+              color="#FFFFFF"
+            />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.headerButton} />
+        )}
       </View>
 
       <FlatList
@@ -227,10 +293,14 @@ const GroupDetailsScreen = ({navigation, route}) => {
               <Text style={styles.groupMembers}>
                 {memberCount} members
               </Text>
+
+              <Text style={styles.typeMembers}>
+                {groupDetails.type}
+              </Text>
             </View>
 
             {/* DESCRIPTION */}
-            <View style={styles.card}>
+            {/* <View style={styles.card}>
 
               <Text style={styles.sectionTitle}>
                 About Group
@@ -244,12 +314,12 @@ const GroupDetailsScreen = ({navigation, route}) => {
                 each other.
               </Text>
 
-            </View>
+            </View> */}
 
             {/* ACTIONS */}
             <View style={styles.card}>
 
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 style={styles.actionRow}
                 onPress={() => {
                   setIsMuted(!isMuted);
@@ -283,14 +353,14 @@ const GroupDetailsScreen = ({navigation, route}) => {
                 </View>
               </TouchableOpacity>
 
-              <View style={styles.divider} />
+              <View style={styles.divider} /> */}
 
               <TouchableOpacity
                 style={styles.actionRow}
                 onPress={() => {
                   navigation.navigate('MediaListScreen', {
-                    groupName: group?.name,
-                    groupId: group?.id,
+                    groupName: groupDetails?.name,
+                    groupId: groupDetails?.id,
                   });
                 }}>
 
@@ -318,7 +388,7 @@ const GroupDetailsScreen = ({navigation, route}) => {
                 />
               </TouchableOpacity>
 
-              <View style={styles.divider} />
+              {/* <View style={styles.divider} />
 
               <TouchableOpacity
                 style={styles.actionRow}
@@ -344,7 +414,7 @@ const GroupDetailsScreen = ({navigation, route}) => {
                   size={24}
                   color={COLORS.white}
                 />
-              </TouchableOpacity>
+              </TouchableOpacity> */}
 
             </View>
 
@@ -362,31 +432,30 @@ const GroupDetailsScreen = ({navigation, route}) => {
             </View>
 
             {/* ADD MEMBER */}
-            <TouchableOpacity
-              style={styles.addMemberRow}
-              onPress={() => {
-                console.log('Add member');
-              }}>
-
-              <View style={styles.addMemberIcon}>
-                <Icon
-                  name="add"
-                  size={23}
-                  color={COLORS.black}
-                />
-              </View>
-
-              <Text style={styles.addMemberText}>
-                Add Members
-              </Text>
-
-            </TouchableOpacity>
+            {currentUserId == groupDetails?.created_by && (
+              <TouchableOpacity
+                style={styles.addMemberRow}
+                onPress={() => navigation.navigate('AddMembersScreen', {
+                  groupDetails: groupDetails,
+                })}>
+                <View style={styles.addMemberIcon}>
+                  <Icon
+                    name="add"
+                    size={23}
+                    color={COLORS.black}
+                  />
+                </View>
+                <Text style={styles.addMemberText}>
+                  Add Members
+                </Text>
+              </TouchableOpacity>
+            )}
           </>
         }
         ListFooterComponent={
           <>
             {!showAllMembers &&
-              members.length > 4 && (
+              members.length > 3 && (
                 <TouchableOpacity
                   style={styles.seeAllButton}
                   onPress={() =>

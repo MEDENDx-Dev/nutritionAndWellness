@@ -104,7 +104,12 @@ export const portraitStyles = StyleSheet.create({
     fontFamily: Fonts.FONTS.PoppinsMedium,
     color: COLORS.greyColor,
   },
-
+  typeMembers: {
+    marginTop: 4,
+    fontSize: normalize(16),
+    fontFamily: Fonts.FONTS.PoppinsSemiBold,
+    color: COLORS.subPrimary,
+  },
   /* CARD */
 
   card: {
@@ -254,14 +259,14 @@ export const portraitStyles = StyleSheet.create({
   },
 
   memberName: {
-    fontSize: normalize(14),
+    fontSize: normalize(15),
     fontFamily: Fonts.FONTS.PoppinsMedium,
     color: COLORS.white,
   },
 
   memberRole: {
     marginTop: 2,
-    fontSize: normalize(11),
+    fontSize: normalize(12),
     fontFamily: Fonts.FONTS.PoppinsRegular,
     color: COLORS.greyColor,
   },
@@ -273,9 +278,9 @@ export const portraitStyles = StyleSheet.create({
     backgroundColor: COLORS.subPrimary,
   },
   adminBadgeText: {
-    fontSize: normalize(11),
+    fontSize: normalize(12),
     fontFamily: Fonts.FONTS.PoppinsMedium,
-    color: COLORS.primary,
+    color: COLORS.white,
   },
 
   seeAllButton: {

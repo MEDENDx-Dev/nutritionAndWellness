@@ -46,6 +46,8 @@ import GroupDetailsScreen from './src/screens/GroupDetailsScreen';
 import CreateGroupScreen from './src/screens/CreateGroupScreen';
 import CreateGroupInfoScreen from './src/screens/CreateGroupInfoScreen';
 import MediaListScreen from './src/screens/MediaListScreen';
+import EditGroupScreen from './src/screens/EditGroupScreen';
+import AddMembersScreen from './src/screens/AddMembersScreen';
 import { Image, Platform, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import {COLORS, Fonts} from './src/utils';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -430,6 +432,16 @@ const App = () => {
           <Stack.Screen
             name="MediaListScreen"
             component={MediaListScreen}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
+            name="EditGroupScreen"
+            component={EditGroupScreen}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
+            name="AddMembersScreen"
+            component={AddMembersScreen}
             options={{headerShown: false}}
           />
         </Stack.Navigator>
