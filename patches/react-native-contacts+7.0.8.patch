@@ -1,0 +1,13 @@
+diff --git a/node_modules/react-native-contacts/ios/RCTContacts/RCTContacts.m b/node_modules/react-native-contacts/ios/RCTContacts/RCTContacts.m
+index a303aff..324bf7a 100644
+--- a/node_modules/react-native-contacts/ios/RCTContacts/RCTContacts.m
++++ b/node_modules/react-native-contacts/ios/RCTContacts/RCTContacts.m
+@@ -1221,7 +1221,7 @@ + (NSData*) loadImageAsset:(NSURL*)assetURL {
+     }
+ }
+ 
+-RCT_EXPORT_METHOD(writePhotoToPath:(RCTResponseSenderBlock) rejecter:(RCTPromiseRejectBlock) reject)
++RCT_EXPORT_METHOD(writePhotoToPath:(RCTPromiseResolveBlock) resolve rejecter:(RCTPromiseRejectBlock) reject)
+ { 
+     reject(@"Error", @"not implemented", nil);
+ }

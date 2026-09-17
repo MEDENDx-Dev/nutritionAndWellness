@@ -13,10 +13,12 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { COLORS, Fonts } from '../../utils/index';
 import Header from '../../components/HeaderComponent';
 import { onForgotPasswordApi } from '../../services/Api';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const ForgotPassword = ({ navigation }) => {
     const orientation = useOrientation(); // Get current orientation
     const isPortrait = orientation === 'portrait';
+    const insets = useSafeAreaInsets();
     const [email, setEmail] = useState('');
     const [emailError, setEmailError] = useState(false);
     const [apiError, setApiError] = useState(false);
@@ -58,6 +60,13 @@ const ForgotPassword = ({ navigation }) => {
 
     return (
        <KeyboardAwareScrollView contentContainerStyle={styles.safeAreaStyle}>
+        <View
+                style={{
+                  width: '100%',
+                  paddingTop: insets.top,
+                  backgroundColor: COLORS.primary,
+                }}
+              />
             <View style={[styles.container, {backgroundColor: COLORS.backColor}]}>
                 <View style={styles.headerView}>
                     <Header title={t('forgot_password')} onPress={() => navigation.goBack()}/>

@@ -141,10 +141,26 @@ const MedicalScreen = ({ navigation, route }) => {
                     });
                     profileData?.medicines?.forEach((medicine, index) => {
                         formdata.append(`current_medicine[${index}][medicine_name]`, medicine.medicine_name);
-                        formdata.append(`current_medicine[${index}][dosage]`, medicine.dosage);
-                        formdata.append(`current_medicine[${index}][timing]`, medicine.timing);
+                        formdata.append(`current_medicine[${index}][duration]`, medicine.duration);
+                        formdata.append(`current_medicine[${index}][startDate]`, moment(medicine.startDate).format('DD/MM/YYYY'));
+                        formdata.append(`current_medicine[${index}][dosageUnit]`, medicine.dosageUnit);
+                        formdata.append(`current_medicine[${index}][dose]`, medicine.dose);
+                        formdata.append(`current_medicine[${index}][totalDose]`, medicine.totalDose);
+                        const timingArray = medicine.timing || [];
+                        timingArray.forEach((timingItem, timingIndex) => {
+                            formdata.append(
+                                `current_medicine[${index}][timing][${timingIndex}]`,
+                                timingItem || ''
+                            );
+                        });
                         formdata.append(`current_medicine[${index}][additional_notes]`, medicine.additional_notes);
                     });
+                    // profileData?.medicines?.forEach((medicine, index) => {
+                    //     formdata.append(`current_medicine[${index}][medicine_name]`, medicine.medicine_name);
+                    //     formdata.append(`current_medicine[${index}][dosage]`, medicine.dosage);
+                    //     formdata.append(`current_medicine[${index}][timing]`, medicine.timing);
+                    //     formdata.append(`current_medicine[${index}][additional_notes]`, medicine.additional_notes);
+                    // });
                     formdata.append("workout_reference", profileData?.workout_reference?.id || '');
 
                     const response = await onAddCommonFormApi('user/profile', formdata);

@@ -156,129 +156,129 @@ const MedicineDetailScreen = ({navigation, route}) => {
 
     const handleContinue = async () => {
         if (fromAccount) {
-                        try {
-                            const imageUrl = profileData.prescription_file;
-                            const extension = imageUrl ? imageUrl.split(".").pop().toLowerCase() : null;
-                            let mimeType = "image/png";
-                            switch (extension) {
-                                case "jpg":
-                                case "jpeg":
-                                    mimeType = "image/jpeg";
-                                    break;
-                                case "png":
-                                    mimeType = "image/png";
-                                    break;
-                                case "webp":
-                                    mimeType = "image/webp";
-                                    break;
-                                case "pdf":
-                                    mimeType = "application/pdf";
-                                    break;
-                            }
-                            const imageFile = {
-                                uri: imageUrl,
-                                type: mimeType,
-                                name: imageUrl ? imageUrl.split('/').pop() : null,
-                            };
-                            const goalIds = profileData?.goals.map(item => item.id);
-                            const medicalIds = profileData?.medical_conditions.map(item => item.id);
-                            console.log('Profile Data for API:', goalIds, profileData);
-                            var formdata = new FormData();
-                            formdata.append("name", profileData?.name);
-                            formdata.append("dob", moment(profileData?.dob).format('DD/MM/YYYY'));
-                            formdata.append("gender", profileData?.gender);
-                            formdata.append("height", profileData?.height);
-                            formdata.append("weight", profileData?.weight);
-                            formdata.append("diet", profileData?.diet?.id || '');
-                            formdata.append("activity_level", profileData?.activity_level?.id || '');
-                            formdata.append("medical_condition_text", profileData?.medical_condition_text || '');
-                            if (profileData.prescription_file) {
-                                formdata.append("prescription_file", imageFile);
-                            }
-                            formdata.append("health_note", profileData?.health_note || '');
-                            goalIds.forEach(id => {
-                                formdata.append("goal[]", id);
-                            });
-                            medicalIds.forEach(id => {
-                                formdata.append("medical_condition[]", id);
-                            });
-                            medicineList?.forEach((medicine, index) => {
-                                formdata.append(`current_medicine[${index}][medicine_name]`, medicine.medicine_name);
-                                formdata.append(`current_medicine[${index}][duration]`, medicine.duration);
-                                formdata.append(`current_medicine[${index}][startDate]`, moment(medicine.startDate).format('DD/MM/YYYY'));
-                                formdata.append(`current_medicine[${index}][dosageUnit]`, medicine.dosageUnit);
-                                formdata.append(`current_medicine[${index}][dose]`, medicine.dose);
-                                formdata.append(`current_medicine[${index}][totalDose]`, medicine.totalDose);
-                                const timingArray = medicine.timing || [];
-                                timingArray.forEach((timingItem, timingIndex) => {
-                                    formdata.append(
-                                        `current_medicine[${index}][timing][${timingIndex}]`,
-                                        timingItem.schedule || ''
-                                    );
-                                });
-                                formdata.append(`current_medicine[${index}][additional_notes]`, medicine.additional_notes);
-                            });
-                            formdata.append("workout_reference", profileData?.workout_reference?.id);
-                            console.log('Request Data:', formdata);
-                            const response = await onAddCommonFormApi('user/profile', formdata);
-                            if (response.data.status) {
-                                showMessage({
-                                    message: 'Profile updated successfully',
-                                    type: 'success',
-                                    duration: 4000, 
-                                    icon: 'success',
-                                });
-                                const profileRes = await onGetCommonApi('user/profile');
-                                updateProfileData(profileRes.data.data.user);
-                                navigation.goBack();
-                            } else {
-                                showMessage({
-                                    message: response.data.message,
-                                    type: 'danger',
-                                    duration: 4000,
-                                    icon: 'danger',
-                                });
-                                setIsLoading(false);
-                            }
-                        } catch (error) {
-                            console.log('Error saving profile data:', error.response || error);
-                            showMessage({
-                                message: 'Error updating profile',
-                                type: 'danger',
-                                duration: 4000,
-                                icon: 'danger',
-                            });
-                            setIsLoading(false);
-                            
-                        }
-                    } else {
-                        if (medicineList.length == 0) {
-                            updateSignupData({
-                                current_medicine: [{
-                                    medicine_name: '',
-                                    duration: '',
-                                    startDate: null,
-                                    dose: '',
-                                    dosageUnit: '',
-                                    totalDose: '1',
-                                    timing: [{
-                                        dose: 1,
-                                        schedule: 'Morning',
-                                    }],
-                                    additional_notes: '',
-                                }]
-                            });
-                            navigation.navigate('WorkoutReference');
-                        } else {
-                            updateSignupData({
-                                current_medicine: medicineList.map(
-                                    ({ id, ...rest }) => rest
-                                ),
-                            });
-                            console.log("Medicine List:", medicineList);
-                            navigation.navigate('WorkoutReference');
-                        }
-                    }
+            try {
+                const imageUrl = profileData.prescription_file;
+                const extension = imageUrl ? imageUrl.split(".").pop().toLowerCase() : null;
+                let mimeType = "image/png";
+                switch (extension) {
+                    case "jpg":
+                    case "jpeg":
+                        mimeType = "image/jpeg";
+                        break;
+                    case "png":
+                        mimeType = "image/png";
+                        break;
+                    case "webp":
+                        mimeType = "image/webp";
+                        break;
+                    case "pdf":
+                        mimeType = "application/pdf";
+                        break;
+                }
+                const imageFile = {
+                    uri: imageUrl,
+                    type: mimeType,
+                    name: imageUrl ? imageUrl.split('/').pop() : null,
+                };
+                const goalIds = profileData?.goals.map(item => item.id);
+                const medicalIds = profileData?.medical_conditions.map(item => item.id);
+                console.log('Profile Data for API:', goalIds, profileData);
+                var formdata = new FormData();
+                formdata.append("name", profileData?.name);
+                formdata.append("dob", moment(profileData?.dob).format('DD/MM/YYYY'));
+                formdata.append("gender", profileData?.gender);
+                formdata.append("height", profileData?.height);
+                formdata.append("weight", profileData?.weight);
+                formdata.append("diet", profileData?.diet?.id || '');
+                formdata.append("activity_level", profileData?.activity_level?.id || '');
+                formdata.append("medical_condition_text", profileData?.medical_condition_text || '');
+                if (profileData.prescription_file) {
+                    formdata.append("prescription_file", imageFile);
+                }
+                formdata.append("health_note", profileData?.health_note || '');
+                goalIds.forEach(id => {
+                    formdata.append("goal[]", id);
+                });
+                medicalIds.forEach(id => {
+                    formdata.append("medical_condition[]", id);
+                });
+                medicineList?.forEach((medicine, index) => {
+                    formdata.append(`current_medicine[${index}][medicine_name]`, medicine.medicine_name);
+                    formdata.append(`current_medicine[${index}][duration]`, medicine.duration);
+                    formdata.append(`current_medicine[${index}][startDate]`, moment(medicine.startDate).format('DD/MM/YYYY'));
+                    formdata.append(`current_medicine[${index}][dosageUnit]`, medicine.dosageUnit);
+                    formdata.append(`current_medicine[${index}][dose]`, medicine.dose);
+                    formdata.append(`current_medicine[${index}][totalDose]`, medicine.totalDose);
+                    const timingArray = medicine.timing || [];
+                    timingArray.forEach((timingItem, timingIndex) => {
+                        formdata.append(
+                            `current_medicine[${index}][timing][${timingIndex}]`,
+                            timingItem.schedule || ''
+                        );
+                    });
+                    formdata.append(`current_medicine[${index}][additional_notes]`, medicine.additional_notes);
+                });
+                formdata.append("workout_reference", profileData?.workout_reference?.id);
+                console.log('Request Data:', formdata);
+                const response = await onAddCommonFormApi('user/profile', formdata);
+                if (response.data.status) {
+                    showMessage({
+                        message: 'Profile updated successfully',
+                        type: 'success',
+                        duration: 4000, 
+                        icon: 'success',
+                    });
+                    const profileRes = await onGetCommonApi('user/profile');
+                    updateProfileData(profileRes.data.data.user);
+                    navigation.goBack();
+                } else {
+                    showMessage({
+                        message: response.data.message,
+                        type: 'danger',
+                        duration: 4000,
+                        icon: 'danger',
+                    });
+                    setIsLoading(false);
+                }
+            } catch (error) {
+                console.log('Error saving profile data:', error.response || error);
+                showMessage({
+                    message: 'Error updating profile',
+                    type: 'danger',
+                    duration: 4000,
+                    icon: 'danger',
+                });
+                setIsLoading(false);
+                
+            }
+        } else {
+            if (medicineList.length == 0) {
+                updateSignupData({
+                    current_medicine: [{
+                        medicine_name: '',
+                        duration: '',
+                        startDate: null,
+                        dose: '',
+                        dosageUnit: '',
+                        totalDose: '1',
+                        timing: [{
+                            dose: 1,
+                            schedule: 'Morning',
+                        }],
+                        additional_notes: '',
+                    }]
+                });
+                navigation.navigate('WorkoutReference');
+            } else {
+                updateSignupData({
+                    current_medicine: medicineList.map(
+                        ({ id, ...rest }) => rest
+                    ),
+                });
+                console.log("Medicine List:", medicineList);
+                navigation.navigate('WorkoutReference');
+            }
+        }
         // Alert.alert(
         // "Success",
         // "Medicine details saved successfully"

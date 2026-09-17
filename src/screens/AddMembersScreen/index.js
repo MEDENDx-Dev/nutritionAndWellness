@@ -595,25 +595,6 @@ const AddMembersScreen = ({navigation, route}) => {
         {
           text: 'Invite',
           onPress: () => {
-            /*
-             * ------------------------------------------------
-             * INVITE API
-             * ------------------------------------------------
-             *
-             * Add your invitation API here.
-             *
-             * Example payload:
-             *
-             * {
-             *   group_id: groupId,
-             *   phone_number:
-             *     user.normalizedPhone,
-             *   name: user.name
-             * }
-             *
-             * ------------------------------------------------
-             */
-
             console.log(
               'Invite group member:',
               {
