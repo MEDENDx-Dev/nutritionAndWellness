@@ -239,7 +239,7 @@ const App = () => {
         barStyle="light-content"   // text/icons color
       />
       <NavigationContainer>
-        <Stack.Navigator initialRouteName="WelcomeScreen">
+        <Stack.Navigator initialRouteName="SplashScreen">
           <Stack.Screen
             name="WelcomeScreen"
             component={WelcomeScreen}

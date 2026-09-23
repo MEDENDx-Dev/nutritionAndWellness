@@ -26,10 +26,16 @@ export const portraitStyles = StyleSheet.create({
         justifyContent: 'center',
         backgroundColor: COLORS.backColor,
     },
-
-    mainView: {
-        width: '90%',
+    headerView: {
+        height: '10%',
         alignItems: 'center',
+        width: '90%'
+    },
+    mainView: {
+        width: '80%',
+        alignItems: 'center',
+        height: '90%',
+        justifyContent: 'center',
     },
 
     logoImage: {

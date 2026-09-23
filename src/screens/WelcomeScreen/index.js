@@ -39,7 +39,7 @@ const WelcomeScreen = ({ navigation }) => {
 
                     {/* Logo */}
                     <Image
-                        source={welcome}
+                        source={logo}
                         style={styles.logoImage}
                     />
 
@@ -104,13 +104,13 @@ const WelcomeScreen = ({ navigation }) => {
                         </View>
 
                     </View>
-
+                </View>
+                <View style={styles.headerView}>
                     {/* Get Started */}
                     <TouchableOpacity
                         activeOpacity={0.8}
                         style={styles.getStartedButton}
-                        onPress={() => navigation.navigate('LoginScreen')}
-                    >
+                        onPress={() => navigation.navigate('LoginScreen')}>
                         <Text style={styles.getStartedText}>
                             Get Started
                         </Text>

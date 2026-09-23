@@ -83,7 +83,8 @@ const SplashScreen = ({ navigation }) => {
                 updateAllUsersList(allUserRes.data.data.users);
                 navigation.navigate('TabStack');
             } else {
-                navigation.navigate('LoginScreen');
+                // navigation.navigate('LoginScreen');
+                navigation.navigate('WelcomeScreen');
             }
         } catch (error) {
             console.log('Error:', error.response);
