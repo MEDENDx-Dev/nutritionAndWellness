@@ -69,6 +69,13 @@ import chat from './src/images/messenger.png';
 import trend from './src/images/trend.png';
 import toList from './src/images/toList.png';
 import FlashMessage from 'react-native-flash-message';
+import {
+  getMessaging,
+  onMessage,
+  onNotificationOpenedApp,
+  getInitialNotification,
+  setBackgroundMessageHandler,
+} from '@react-native-firebase/messaging';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -215,6 +222,73 @@ const TabStack = () => {
 
 const App = () => {
   
+  useEffect(() => {
+    const messaging = getMessaging();
+
+    const unsubscribe = onMessage(
+      messaging,
+      async remoteMessage => {
+        console.log('Foreground notification:', remoteMessage);
+      },
+    );
+
+    const unsubscribeOpened = onNotificationOpenedApp(
+      messaging,
+      remoteMessage => {
+        console.log(
+          'Notification opened:',
+          remoteMessage,
+        );
+
+        const data = remoteMessage?.data;
+
+        // if (
+        //   data?.type === 'group_message' &&
+        //   data?.group_id
+        // ) {
+        //   navigationRef.current?.navigate(
+        //     'MessageScreen',
+        //     {
+        //       id: Number(data.group_id),
+        //     },
+        //   );
+        // }
+      },
+    );
+
+    getInitialNotification(messaging).then(
+      remoteMessage => {
+        if (!remoteMessage) {
+          return;
+        }
+
+        console.log(
+          'App opened from notification:',
+          remoteMessage,
+        );
+
+        const data = remoteMessage?.data;
+
+        // if (
+        //   data?.type === 'group_message' &&
+        //   data?.group_id
+        // ) {
+        //   navigationRef.current?.navigate(
+        //     'MessageScreen',
+        //     {
+        //       id: Number(data.group_id),
+        //     },
+        //   );
+        // }
+      },
+    );
+
+    return () => {
+      unsubscribe();
+      unsubscribeOpened();
+    };
+  }, []);
+
   useEffect(() => {
     async function initNotifications() {
       try {

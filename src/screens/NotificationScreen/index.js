@@ -1,16 +1,12 @@
 import {
     Text,
     View,
-    TextInput,
     TouchableOpacity,
     Image,
-    ScrollView,
     ActivityIndicator,
-    Platform,
-    PermissionsAndroid,
     FlatList,
 } from 'react-native';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { portraitStyles, landscapeStyles } from './styles';
 import useOrientation from '../../components/OrientationComponent';
@@ -21,7 +17,7 @@ import { onGetCommonApi } from '../../services/Api';
 import { useFocusEffect } from '@react-navigation/native';
 
 const NotificationScreen = ({ navigation }) => {
-    const orientation = useOrientation(); // Get current orientation
+    const orientation = useOrientation();
     const isPortrait = orientation === 'portrait';
     const insets = useSafeAreaInsets();
     const styles = isPortrait ? portraitStyles : landscapeStyles;
@@ -38,7 +34,6 @@ const NotificationScreen = ({ navigation }) => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            // Fetch notification data here
             const response = await onGetCommonApi('notifications');
             if (response.data.status) {
                 setNotificationList(response.data.data.notifications);
