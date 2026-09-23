@@ -48,6 +48,7 @@ import CreateGroupInfoScreen from './src/screens/CreateGroupInfoScreen';
 import MediaListScreen from './src/screens/MediaListScreen';
 import EditGroupScreen from './src/screens/EditGroupScreen';
 import AddMembersScreen from './src/screens/AddMembersScreen';
+import WelcomeScreen from './src/screens/WelcomeScreen';
 import { Image, Platform, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import {COLORS, Fonts} from './src/utils';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -219,7 +220,7 @@ const App = () => {
       try {
         await requestNotificationPermission();
         await createNotificationChannel();
-        await scheduleMealNotifications();
+        // await scheduleMealNotifications();
         await scheduleWalkReminders();
         await scheduleWaterReminders();
         await scheduleDailyStepGoalReminder(10000);
@@ -238,7 +239,12 @@ const App = () => {
         barStyle="light-content"   // text/icons color
       />
       <NavigationContainer>
-        <Stack.Navigator initialRouteName="SplashScreen">
+        <Stack.Navigator initialRouteName="WelcomeScreen">
+          <Stack.Screen
+            name="WelcomeScreen"
+            component={WelcomeScreen}
+            options={{ headerShown: false }}
+          />
           <Stack.Screen
             name="SplashScreen"
             component={SplashScreen}

@@ -16,7 +16,7 @@ const STEP_STATE_KEY = "daily-step-state";
 const STEP_SYNC_DONE_KEY = "daily-step-sync-done";
 const STEP_SYNC_PENDING_KEY = "daily-step-sync-pending";
 const MEAL_NOTIFICATION_IDS = ["breakfast-reminder", "lunch-reminder", "dinner-reminder"];
-const WATER_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22];
+const WATER_HOURS = [8, 13, 20];
 
 let stepSyncInFlight = new Map();
 
